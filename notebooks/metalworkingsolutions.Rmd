@@ -1,0 +1,137 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+c. Are there parts that frequently exceed their planned production hours?
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+read.csv('completed_table.csv')
+```
+
+```{r}
+job_ops <- read.csv('job_ops_23-24.csv')
+```
+
+```{r}
+job_ops <- job_ops |> 
+  mutate(hours_diff = completed_production_hours - reestimated_hours, hours_diff_2 = completed_production_hours - est_hours)
+```
+
+
+need part id, number of parts, and average diff in estimated and completed hours (where neither is 0)
+
+```{r}
+avg_hours_parts <- job_ops |>
+  filter(completed_production_hours != 0, reestimated_hours != 0) |> 
+  group_by(part_id) |> 
+  summarise(num_parts = n(), avg_hr_diff = mean(hours_diff)) |> 
+  mutate_if(is.numeric,~round(.,digits=0)) |> 
+  arrange(desc(num_parts))
+
+avg_hours_parts
+```
+
+this cleans out some outliers, but maybe cleans out too much??
+```{r}
+avg_hours_parts <- job_ops |>
+  filter(completed_production_hours != 0, reestimated_hours != 0, !(standard_factor %in% c('TH', 'th', 'td'))) |> 
+  group_by(part_id) |> 
+  summarise(num_parts = n(), total_hours = sum(completed_production_hours), avg_hr = mean(completed_production_hours), avg_hr_diff = mean(hours_diff)) |> 
+  mutate_if(is.numeric,~round(.,digits=0)) |> 
+  arrange(desc(avg_hr_diff))
+```
+
+
+```{r}
+avg_hours_parts |> 
+  filter(avg_hr_diff != 0, num_parts >2) |> 
+  arrange(desc(num_parts))
+```
+
+```{r}
+job_ops |> 
+  filter(part_id == 'F022-0009C')
+```
+
+
+```{r}
+avg_hours_parts |> 
+  filter(avg_hr_diff != 0, num_parts >2) |>
+  ggplot(aes(x=part_id, y=avg_hr_diff)) +
+  geom_col() +
+  scale_x_discrete(guide = guide_axis(angle = 90))
+```
+
+```{r}
+avg_hours_parts2 <- job_ops |>
+  filter(completed_production_hours != 0, est_hours != 0, !(standard_factor %in% c('TH', 'th', 'td'))) |> 
+  group_by(part_id) |> 
+  summarise(num_parts = n(), total_hours = sum(completed_production_hours), avg_hr = mean(completed_production_hours), avg_hr_diff = mean(hours_diff)) |> 
+  mutate_if(is.numeric,~round(.,digits=0)) |> 
+  arrange(desc(avg_hr))
+
+avg_hours_parts2 |> 
+  filter(avg_hr_diff != 0) |> 
+  arrange(desc(avg_hr_diff))
+
+avg_hours_parts2 |> 
+  filter(avg_hr_diff != 0) |>
+  ggplot(aes(x=part_id, y=avg_hr_diff)) +
+  geom_col() +
+  scale_x_discrete(guide = guide_axis(angle = 90))
+```
+
+
+```{r}
+job_ops |>
+  filter(completed_production_hours != 0, reestimated_hours != 0, !(standard_factor %in% c('TH', 'th', 'td'))) |> 
+  group_by(short_description) |> 
+  summarise(num_jobs = n(), total_hours = sum(completed_production_hours), avg_hr = mean(completed_production_hours), avg_hr_diff = mean(hours_diff)) |> 
+  mutate_if(is.numeric,~round(.,digits=0)) |> 
+  arrange(desc(total_hours))
+```
+
+```{r}
+job_ops |>
+  filter(completed_production_hours != 0, reestimated_hours != 0) |> 
+  group_by(short_description) |> 
+  summarise(num_jobs = n(), total_hours = sum(completed_production_hours), avg_hr = mean(completed_production_hours), avg_hr_diff = mean(hours_diff)) |> 
+  mutate_if(is.numeric,~round(.,digits=0)) |> 
+  arrange(desc(total_hours))
+```
+
+```{r}
+avg_hours_ops <- job_ops |>
+  filter(completed_production_hours != 0, reestimated_hours != 0, !(standard_factor %in% c('TH', 'th', 'td'))) |> 
+  group_by(short_description) |> 
+  summarise(num_jobs = n(), total_hours = sum(completed_production_hours), avg_hr = mean(completed_production_hours), avg_hr_diff = mean(hours_diff)) |> 
+  mutate_if(is.numeric,~round(.,digits=0)) |> 
+  arrange(desc(total_hours))
+
+avg_hours_ops |> 
+  filter(avg_hr_diff != 0) |> 
+  arrange(desc(avg_hr_diff))
+
+avg_hours_ops |> 
+  filter(avg_hr_diff != 0) |>
+  ggplot(aes(x=short_description, y=avg_hr_diff)) +
+  geom_col() +
+  scale_x_discrete(guide = guide_axis(angle = 90))
+```
+
+```{r}
+hours_ops |> 
+  select(-c(num_jobs, total_hours)) |> 
+  pivot_longer(!short_description, names_to = "math", values_to = "hours")
+```
+
+```{r}
+job_ops |> 
+  filter(part_id == c('Y002-0562', 'C057-0000I'))
+```
+
